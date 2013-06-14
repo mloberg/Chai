@@ -56,7 +56,7 @@ class CreateCommand extends BaseCommand
     public function getCreator()
     {
         if (!$this->creator) {
-            $this->creator = new Creator(new Filesystem);
+            $this->creator = new Creator($this->app->getFilesystem());
         }
         return $this->creator;
     }

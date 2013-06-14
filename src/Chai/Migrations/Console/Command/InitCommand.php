@@ -16,8 +16,6 @@ use Illuminate\Filesystem\Filesystem;
 class InitCommand extends BaseCommand
 {
 
-    protected $files;
-
     protected function configure()
     {
         $this->setName('migrate:init')
@@ -27,7 +25,8 @@ class InitCommand extends BaseCommand
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $schema = $this->app->schema();
+        $app = $this->app;
+        $schema = $app->schema();
         if (!$schema->hasTable('migrations')) {
             $output->writeln("Creating migrations table");
             $schema->create('migrations', function($table) {
@@ -37,28 +36,16 @@ class InitCommand extends BaseCommand
                 $table->timestamp('ran_at');
             });
         }
-        $path = $this->app->getMigrationsPath();
-        if (!$this->getFilesystem()->isDirectory($path)) {
+        $files = $app->getFilesystem();
+        $path = $app->getMigrationsPath();
+        if (!$files->isDirectory($path)) {
             $output->writeln('Attempting to create migrations directory');
-            if (!$this->getFilesystem()->makeDirectory($path, 0664)) {
+            if (!$files->makeDirectory($path, 0664)) {
                 $output->writeln('<error>Could not create migrations directory</error>');
                 exit(1);
             }
         }
         $output->writeln('<info>You are now ready to run migrations.</info>');
-    }
-
-    public function setFilesystem($files)
-    {
-        $this->files = $files;
-    }
-
-    public function getFilesystem()
-    {
-        if (!$this->files) {
-            $this->files = new Filesystem;
-        }
-        return $this->files;
     }
 
 }

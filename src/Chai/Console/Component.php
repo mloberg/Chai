@@ -2,9 +2,9 @@
 
 namespace Chai\Console;
 
-abstract class Component
+interface Component
 {
 
-    abstract public function getCommands();
+    public function getCommands();
 
 }

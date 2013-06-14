@@ -3,6 +3,7 @@
 use Mockery as m;
 use Symfony\Component\Console\Tester\CommandTester;
 use Illuminate\Database\Capsule\Manager as Capsule;
+use Illuminate\Filesystem\Filesystem;
 use Chai\Console\Application;
 use Chai\Migrations\Console\Application as Migrations;
 
@@ -12,12 +13,15 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
     protected $application;
     protected $migrations;
     protected $capsule;
+    protected $files;
 
     protected function setUp()
     {
+        $this->files = m::mock('Illuminate\Filesystem\Filesystem');
         // Create console application
         $this->application = new Application;
         $this->migrations = new Migrations;
+        $this->migrations->setFilesystem($this->files);
         $this->migrations->setDatabaseParameters(array(
             'host'     => $_SERVER['DB_HOST'],
             'port'     => $_SERVER['DB_PORT'],
@@ -50,13 +54,11 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $this->migrations->setMigrationsPath('foo');
 
         $command = $this->application->find('migrate:init');
-        $files = m::mock('Illuminate\Filesystem\Filesystem');
-        $command->setFilesystem($files);
 
-        $files->shouldReceive('isDirectory')->once()
-              ->with('foo')->andReturn(false);
-        $files->shouldReceive('makeDirectory')->once()
-              ->with('foo', 0664)->andReturn(true);
+        $this->files->shouldReceive('isDirectory')->once()
+                    ->with('foo')->andReturn(false);
+        $this->files->shouldReceive('makeDirectory')->once()
+                    ->with('foo', 0664)->andReturn(true);
 
         $commandTester = new CommandTester($command);
         $commandTester->execute(array('command' => $command->getName()));
@@ -93,9 +95,7 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
 
     protected function getCreator()
     {
-        $files = m::mock('Illuminate\Filesystem\Filesystem');
-
-        return $this->getMock('Chai\Migrations\Creator', array('getDatePrefix'), array($files));
+        return $this->getMock('Chai\Migrations\Creator', array('getDatePrefix'), array($this->files));
     }
 
 }
