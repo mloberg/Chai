@@ -63,9 +63,9 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $commandTester = new CommandTester($command);
         $commandTester->execute(array('command' => $command->getName()));
 
-        $this->assertRegExp('/Creating migrations table/', $commandTester->getDisplay());
         $rows = $connection->select("SELECT * FROM migrations");
         $this->assertEquals(0, count($rows));
+        $this->assertRegExp('/You are now ready to run migrations/', $commandTester->getDisplay());
     }
 
     public function testCreate()

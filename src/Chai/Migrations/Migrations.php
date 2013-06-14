@@ -23,6 +23,25 @@ class Migrations
         }
     }
 
+    public function setup()
+    {
+        if (!$this->schema()->hasTable('migrations')) {
+            $this->schema()->create('migrations', function($table) {
+                $table->date('date')->uniqe();
+                $table->string('name');
+                $table->boolean('applied');
+                $table->timestamp('ran_at');
+            });
+        }
+        $files = $this->getFilesystem();
+        $path = $this->getMigrationsPath();
+        if (!$files->isDirectory($path)) {
+            if (!$files->makeDirectory($path, 0664)) {
+                throw new MigrationsException('Could not create migrations directory');
+            }
+        }
+    }
+
     public function setDatabaseParameters($parameters = array())
     {
         $defaults = array(
