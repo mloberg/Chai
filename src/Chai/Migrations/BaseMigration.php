@@ -2,42 +2,52 @@
 
 namespace Chai\Migrations;
 
-use Illuminate\Database\Capsule\Manager as Capsule;
-
 abstract class BaseMigration
 {
 
-    protected $capsule;
+    protected $connection;
 
-    public function __construct($database = array())
+    public function __construct($connection)
     {
-        $this->capsule = new Capsule;
-        if ($database) {
-            $this->setDatabaseParameters($database);
-        }
+        $this->connection = $connection;
     }
 
     abstract public function up();
     abstract public function down();
 
-    public function setDatabaseParameters($parameters)
+    public function setConnection($connection)
     {
-        $defaults = array(
-            'driver'    => 'mysql',
-            'charset'   => 'utf8',
-            'collation' => 'utf8_unicode_ci',
-        );
-        $this->capsule->addConnection($parameters + $defaults, 'migration');
+        $this->connection = $connection;
     }
 
     protected function db()
     {
-        return $this->capsule->getConnection('migration');
+        return $this->connection;
     }
 
     protected function schema()
     {
         return $this->db()->getSchemaBuilder();
+    }
+
+    public function getDate()
+    {
+        $filename = $this->getFileName();
+        $date = implode('', array_slice(explode('_', $filename), 0, 4));
+        return date('Y-m-d H:i:s', strtotime($date));
+    }
+
+    public function getName()
+    {
+        $filename = $this->getFileName();
+        return implode('_', array_slice(explode('_', $filename), 4));
+    }
+
+    private function getFileName()
+    {
+        $reflectionClass = new \ReflectionClass(get_called_class());
+        $filename = basename($reflectionClass->getFileName(), '.php');
+        return $filename;
     }
 
 }

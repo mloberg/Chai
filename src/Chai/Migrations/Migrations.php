@@ -23,11 +23,16 @@ class Migrations
         }
     }
 
+    /**
+     * Create the migrations table and ensure the migrations directory exists.
+     *
+     * @return void
+     */
     public function setup()
     {
         if (!$this->schema()->hasTable('migrations')) {
             $this->schema()->create('migrations', function($table) {
-                $table->date('date')->uniqe();
+                $table->dateTime('id')->uniqe();
                 $table->string('name');
                 $table->boolean('applied');
                 $table->timestamp('ran_at');
@@ -40,6 +45,21 @@ class Migrations
                 throw new MigrationsException('Could not create migrations directory');
             }
         }
+    }
+
+    /**
+     * Return a new instance of a migration.
+     *
+     * @param  string $file Migration file (without extension or directory)
+     * @return class        Migration
+     */
+    protected function resolve($file)
+    {
+        $path = $this->getMigrationsPath();
+        $this->getFilesystem()->requireOnce($path.'/'.$file.'.php');
+        $file = implode('_', array_slice(explode('_', $file), 4));
+        $class = studly_case($file);
+        return new $class($this->db());
     }
 
     public function setDatabaseParameters($parameters = array())
