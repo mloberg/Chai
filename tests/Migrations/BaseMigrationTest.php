@@ -23,14 +23,21 @@ class BaseMigrationTest extends PHPUnit_Framework_TestCase
             'charset'   => 'utf8',
             'collation' => 'utf8_unicode_ci',
         ), 'testing');
-        $this->migration = new MigrationTwo($this->capsule->getConnection('testing'));
+        $this->migration = new MigrationTwo($this->getConnection());
+        $this->getSchemaBuilder()->dropIfExists('migrations');
+        $this->getSchemaBuilder()->create('migrations', function($table) {
+            $table->dateTime('id')->uniqe();
+            $table->string('name');
+            $table->boolean('applied');
+            $table->timestamp('ran_at');
+        });
     }
 
     public function testDB()
     {
         $db = $this->getMethod('db');
         $this->assertEquals($db->invoke($this->migration),
-                            $this->capsule->getConnection('testing'));
+                            $this->getConnection());
     }
 
     public function testSetConnection()
@@ -44,10 +51,39 @@ class BaseMigrationTest extends PHPUnit_Framework_TestCase
     public function testSchema()
     {
         $schema = $this->getMethod('schema');
-        $this->assertEquals(
-            $schema->invoke($this->migration),
-            $this->capsule->getConnection('testing')->getSchemaBuilder()
-        );
+        $this->assertEquals($schema->invoke($this->migration),
+                            $this->getSchemaBuilder());
+    }
+
+    public function testApplied()
+    {
+        $this->assertFalse($this->migration->applied());
+        $this->getConnection()->table('migrations')->insert(array(
+            'id'      => $this->migration->getDate(),
+            'name'    => $this->migration->getName(),
+            'applied' => true,
+        ));
+        $this->assertTrue($this->migration->applied());
+    }
+
+    public function testRunUp()
+    {
+        $this->assertNull($this->getMigrationRecord());
+        $this->assertTrue($this->migration->runUp());
+        $this->assertTrue($this->migration->applied());
+    }
+
+    /**
+     * @expectedException UpdateMethodRan
+     */
+    public function testRunUpWithUpdateMethod()
+    {
+        $this->getConnection()->table('migrations')->insert(array(
+            'id'      => $this->migration->getDate(),
+            'name'    => $this->migration->getName(),
+            'applied' => true,
+        ));
+        $this->migration->runUp();
     }
 
     public function testGetDate()
@@ -66,6 +102,22 @@ class BaseMigrationTest extends PHPUnit_Framework_TestCase
         $method = $class->getMethod($name);
         $method->setAccessible(true);
         return $method;
+    }
+
+    protected function getConnection()
+    {
+        return $this->capsule->getConnection('testing');
+    }
+
+    protected function getSchemaBuilder()
+    {
+        return $this->getConnection()->getSchemaBuilder();
+    }
+
+    protected function getMigrationRecord()
+    {
+        return $this->getConnection()->table('migrations')
+                    ->where('id', $this->migration->getDate())->first();
     }
 
 }
