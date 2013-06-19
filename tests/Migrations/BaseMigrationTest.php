@@ -33,6 +33,11 @@ class BaseMigrationTest extends PHPUnit_Framework_TestCase
         });
     }
 
+    protected function tearDown()
+    {
+        $this->getSchemaBuilder()->dropIfExists('migrations');
+    }
+
     public function testDB()
     {
         $db = $this->getMethod('db');
@@ -84,6 +89,25 @@ class BaseMigrationTest extends PHPUnit_Framework_TestCase
             'applied' => true,
         ));
         $this->migration->runUp();
+    }
+
+    public function testRunDown()
+    {
+        $this->getConnection()->table('migrations')->insert(array(
+            'id'      => $this->migration->getDate(),
+            'name'    => $this->migration->getName(),
+            'applied' => true,
+        ));
+        $this->assertTrue($this->migration->runDown());
+        $this->assertFalse($this->migration->applied());
+    }
+
+    /**
+     * @expectedException \Chai\Migrations\MigrationsException
+     */
+    public function testRunDownNotApplied()
+    {
+        $this->migration->runDown();
     }
 
     public function testGetDate()

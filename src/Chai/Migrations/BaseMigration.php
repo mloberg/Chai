@@ -20,19 +20,28 @@ abstract class BaseMigration
         if ($this->applied() && method_exists($this, 'update')) {
             $this->update();
         } elseif (!$this->applied()) {
-            if (!$this->getRecord()) {
-                $this->db()->table('migrations')->insert(array(
-                    'id'      => $this->getDate(),
-                    'name'    => $this->getName(),
-                    'applied' => false,
-                ));
-            }
-            $this->up();
+            $this->getOrCreateRecord();
             $ran_at = date('Y-m-d H:i:s');
+            $this->up();
             $this->db()->table('migrations')
                        ->where('id', $this->getDate())
                        ->update(array('applied' => true, 'ran_at' => $ran_at));
         }
+        return true;
+    }
+
+    public function runDown()
+    {
+        if (!$this->applied()) {
+            throw new MigrationsException('Migration not applied.');
+            return false;
+        }
+        $this->getOrCreateRecord();
+        $ran_at = date('Y-m-d H:i:s');
+        $this->down();
+        $this->db()->table('migrations')
+                   ->where('id', $this->getDate())
+                   ->update(array('applied' => false, 'ran_at' => $ran_at));
         return true;
     }
 
@@ -82,6 +91,20 @@ abstract class BaseMigration
     {
         return $this->db()->table('migrations')
                           ->where('id', $this->getDate())->first();
+    }
+
+    protected function getOrCreateRecord()
+    {
+        $record = $this->getRecord();
+        if (!$record) {
+            $this->db()->table('migrations')->insert(array(
+                'id'      => $this->getDate(),
+                'name'    => $this->getName(),
+                'applied' => false,
+            ));
+            return $this->getRecord();
+        }
+        return $record;
     }
 
 }
