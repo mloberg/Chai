@@ -48,6 +48,24 @@ class Migrations
     }
 
     /**
+     * Get all migrations from file system.
+     *
+     * @return array migrations
+     */
+    public function getAll()
+    {
+        $path = $this->getMigrationsPath();
+        $files = $this->getFilesystem()->glob($path.'/*_*.php');
+        if ($files === false) {
+            return array();
+        }
+        $files = array_map(function($file) {
+            return str_replace('.php', '', basename($file));
+        }, $files);
+        sort($files);
+        return $files;
+    }
+
      * Return a new instance of a migration.
      *
      * @param  string $file Migration file (without extension or directory)

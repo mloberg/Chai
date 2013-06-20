@@ -105,6 +105,24 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
     }
 
     /**
+     * Test the migration:list command
+     *
+     * Should list all migrations (files).
+     */
+    public function testList()
+    {
+        $this->files->shouldReceive('glob')->once()
+             ->with($this->migrations->getMigrationsPath().'/*_*.php')
+             ->andReturn(array('foobar'));
+
+        $command = $this->application->find('migration:list');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array('command' => $command->getName()));
+
+        $this->assertRegExp('/\* foobar/', $commandTester->getDisplay());
+    }
+
      * Return a Migrations Creator mock object.
      * @return Chai\Migrations\creator mock object
      */
