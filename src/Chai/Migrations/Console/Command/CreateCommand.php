@@ -22,7 +22,7 @@ class CreateCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('migrate:create')
+        $this->setName('migration:create')
              ->setDescription('Create a new migration')
              ->addArgument('name', InputArgument::REQUIRED, 'Name of the migration')
              ->setHelp('');

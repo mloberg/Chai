@@ -46,6 +46,11 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         ), 'testing');
     }
 
+    /**
+     * Test the migration:init command
+     *
+     * Should create migrations table and create the migrations directory
+     */
     public function testInit()
     {
         $connection = $this->capsule->getConnection('testing');
@@ -53,7 +58,7 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $schema->dropIfExists('migrations');
         $this->migrations->setMigrationsPath('foo');
 
-        $command = $this->application->find('migrate:init');
+        $command = $this->application->find('migration:init');
 
         $this->files->shouldReceive('isDirectory')->once()
                     ->with('foo')->andReturn(false);
@@ -68,12 +73,18 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $this->assertRegExp('/You are now ready to run migrations/', $commandTester->getDisplay());
     }
 
+    /**
+     * Test the migration:create command
+     *
+     * Should create a migration with the current timestamp
+     * and name in the migrations directory
+     */
     public function testCreate()
     {
         $this->migrations->setMigrationsPath('foo');
 
         $creator = $this->getCreator();
-        $command = $this->application->find('migrate:create');
+        $command = $this->application->find('migration:create');
         $command->setCreator($creator);
 
         $creator->expects($this->any())->method('getDatePrefix')
@@ -93,6 +104,10 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $this->assertRegExp('/Created foo\/foo_create_user_table\.php/', $commandTester->getDisplay());
     }
 
+    /**
+     * Return a Migrations Creator mock object.
+     * @return Chai\Migrations\creator mock object
+     */
     protected function getCreator()
     {
         return $this->getMock('Chai\Migrations\Creator', array('getDatePrefix'), array($this->files));

@@ -18,7 +18,7 @@ class InitCommand extends BaseCommand
 
     protected function configure()
     {
-        $this->setName('migrate:init')
+        $this->setName('migration:init')
              ->setDescription('Setup database for migrations')
              ->setHelp('');
     }
