@@ -23,8 +23,12 @@ class ListCommand extends BaseCommand
     protected function execute(InputInterface $input, OutputInterface $output)
     {
         $migrations = $this->app->getAll();
-        foreach ($migrations as $migration) {
-            $output->writeln("* {$migration}");
+        if ($migrations) {
+            foreach ($migrations as $migration) {
+                $output->writeln("* {$migration}");
+            }
+        } else {
+            $output->writeln('No migrations found');
         }
     }
 

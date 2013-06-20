@@ -123,6 +123,23 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $this->assertRegExp('/\* foobar/', $commandTester->getDisplay());
     }
 
+    /**
+     * Test the migration:list command when no migrations are found.
+     */
+    public function testListEmpty()
+    {
+        $this->files->shouldReceive('glob')->once()
+             ->with($this->migrations->getMigrationsPath().'/*_*.php')
+             ->andReturn(false);
+
+        $command = $this->application->find('migration:list');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array('command' => $command->getName()));
+
+        $this->assertRegExp('/No migrations found/', $commandTester->getDisplay());
+    }
+
      * Return a Migrations Creator mock object.
      * @return Chai\Migrations\creator mock object
      */
