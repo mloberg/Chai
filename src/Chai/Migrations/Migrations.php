@@ -71,7 +71,7 @@ class Migrations
      * @param  string $file Migration file (without extension or directory)
      * @return class        Migration
      */
-    protected function resolve($file)
+    public function resolve($file)
     {
         $path = $this->getMigrationsPath();
         $this->getFilesystem()->requireOnce($path.'/'.$file.'.php');

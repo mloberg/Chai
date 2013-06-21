@@ -140,6 +140,39 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $this->assertRegExp('/No migrations found/', $commandTester->getDisplay());
     }
 
+    /**
+     * Test the migration:status command
+     *
+     * Should list all current migrations (files) and if they are applied.
+     */
+    public function testStatus()
+    {
+        $this->files->shouldReceive('isDirectory')->once()->andReturn(true);
+        $this->migrations->setup();
+        $this->migrations->db()->table('migrations')->insert(array(
+            'id'      => '2013-06-14 07:58:39',
+            'name'    => 'create_test',
+            'applied' => true,
+        ));
+        $migration = $this->migrations->getMigrationsPath() .
+                     '/2013_06_14_075839_create_test.php';
+        $this->files->shouldReceive('requireOnce')->once()->with($migration);
+        require_once($migration);
+        $this->files->shouldReceive('glob')->once()
+             ->with($this->migrations->getMigrationsPath().'/*_*.php')
+             ->andReturn(array('2013_06_14_075839_create_test'));
+
+        $command = $this->application->find('migration:status');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array('command' => $command->getName()));
+
+        $this->assertRegExp(
+            '/\* 2013_06_14_075839_create_test \(applied\)/',
+            $commandTester->getDisplay()
+        );
+    }
+
      * Return a Migrations Creator mock object.
      * @return Chai\Migrations\creator mock object
      */

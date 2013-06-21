@@ -9,6 +9,7 @@ use Chai\Migrations\Migrations;
 use Chai\Migrations\Console\Command\InitCommand;
 use Chai\Migrations\Console\Command\CreateCommand;
 use Chai\Migrations\Console\Command\ListCommand;
+use Chai\Migrations\Console\Command\StatusCommand;
 
 class Application extends Migrations implements Component
 {
@@ -24,6 +25,7 @@ class Application extends Migrations implements Component
             new InitCommand($this),
             new CreateCommand($this),
             new ListCommand($this),
+            new StatusCommand($this),
         );
     }
 
