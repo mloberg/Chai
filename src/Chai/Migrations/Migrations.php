@@ -66,6 +66,38 @@ class Migrations
         return $files;
     }
 
+    /**
+     * Get all ran migrations.
+     *
+     * @return array migrations
+     */
+    public function getRan()
+    {
+        $migrations = $this->db()->table('migrations')
+                                 ->where('applied', true)
+                                 ->get();
+        $migrations = array_map(function($migration) {
+            $id = date('Y_m_d_His', strtotime($migration['id']));
+            return $id . '_' . $migration['name'];
+        }, $migrations);
+        return $migrations;
+    }
+
+    public function runUp($file)
+    {
+        $migration = $this->resolve($file);
+        $migration->runUp();
+        return $migration;
+    }
+
+    public function runDown($file)
+    {
+        $migration = $this->resolve($file);
+        $migration->runDown();
+        return $migration;
+    }
+
+    /**
      * Return a new instance of a migration.
      *
      * @param  string $file Migration file (without extension or directory)
