@@ -12,6 +12,7 @@ use Chai\Migrations\Console\Command\ListCommand;
 use Chai\Migrations\Console\Command\StatusCommand;
 use Chai\Migrations\Console\Command\UpCommand;
 use Chai\Migrations\Console\Command\DownCommand;
+use Chai\Migrations\Console\Command\LatestCommand;
 
 class Application extends Migrations implements Component
 {
@@ -30,6 +31,7 @@ class Application extends Migrations implements Component
             new StatusCommand($this),
             new UpCommand($this),
             new DownCommand($this),
+            new LatestCommand($this),
         );
     }
 

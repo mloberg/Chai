@@ -295,6 +295,21 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    public function testLatest()
+    {
+        $this->migrations->setFilesystem(new Filesystem);
+
+        $command = $this->application->find('migration:latest');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array('command' => $command->getName()));
+
+        $records = $this->migrations->db()->table('migrations')
+                                    ->where('applied', true)->get();
+
+        $this->assertEquals(4, count($records));
+    }
+
     /**
      * Return a Migrations Creator mock object.
      * @return Chai\Migrations\creator mock object
