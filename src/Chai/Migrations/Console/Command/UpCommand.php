@@ -38,7 +38,7 @@ class UpCommand extends BaseCommand
         if ($input->getOption('single')) {
             $migration = $this->app->runUp($name);
             if ($migration->applied()) {
-                $output->writeln("Ran migration {$name}.");
+                $output->writeln("<info>Ran migration {$name}.</info>");
             } else {
                 $msg = "<error>Error running migration {$name}.</error>";
                 $output->writeln($msg);

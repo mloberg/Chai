@@ -17,11 +17,8 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
 
     protected function setUp()
     {
-        $this->files = m::mock('Illuminate\Filesystem\Filesystem');
-        // Create console application
-        $this->application = new Application;
         $this->migrations = new Migrations;
-        $this->migrations->setFilesystem($this->files);
+        $this->migrations->setMigrationsPath(__DIR__.'/stubs');
         $this->migrations->setDatabaseParameters(array(
             'host'     => $_SERVER['DB_HOST'],
             'port'     => $_SERVER['DB_PORT'],
@@ -30,20 +27,22 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
             'database' => $_SERVER['DB_NAME'],
             'charset'  => 'utf8',
         ));
-        $this->migrations->setMigrationsPath(__DIR__.'/stubs');
+        // Setup database
+        $this->migrations->schema()->dropIfExists('migrations');
+        $this->migrations->schema()->dropIfExists('test');
+        $this->migrations->setup();
+        // Create the mock object
+        $this->files = m::mock('Illuminate\Filesystem\Filesystem');
+        $this->migrations->setFilesystem($this->files);
+        // Register the component
+        $this->application = new Application;
         $this->application->register($this->migrations);
-        // Database access to test migrations
-        $this->capsule = new Capsule;
-        $this->capsule->addConnection(array(
-            'driver'    => 'mysql',
-            'host'      => $_SERVER['DB_HOST'],
-            'port'      => $_SERVER['DB_PORT'],
-            'username'  => $_SERVER['DB_USER'],
-            'password'  => $_SERVER['DB_PASS'],
-            'database'  => $_SERVER['DB_NAME'],
-            'charset'   => 'utf8',
-            'collation' => 'utf8_unicode_ci',
-        ), 'testing');
+    }
+
+    protected function tearDown()
+    {
+        $this->migrations->schema()->dropIfExists('migrations');
+        m::close();
     }
 
     /**
@@ -53,9 +52,6 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
      */
     public function testInit()
     {
-        $connection = $this->capsule->getConnection('testing');
-        $schema = $connection->getSchemaBuilder();
-        $schema->dropIfExists('migrations');
         $this->migrations->setMigrationsPath('foo');
 
         $command = $this->application->find('migration:init');
@@ -68,9 +64,13 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $commandTester = new CommandTester($command);
         $commandTester->execute(array('command' => $command->getName()));
 
-        $rows = $connection->select("SELECT * FROM migrations");
+        $rows = $this->migrations->db()->table('migrations')->get();
         $this->assertEquals(0, count($rows));
-        $this->assertRegExp('/You are now ready to run migrations/', $commandTester->getDisplay());
+
+        $this->assertRegExp(
+            '/You are now ready to run migrations/',
+            $commandTester->getDisplay()
+        );
     }
 
     /**
@@ -101,7 +101,10 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
             'name' => 'create_user_table',
         ));
 
-        $this->assertRegExp('/Created foo\/foo_create_user_table\.php/', $commandTester->getDisplay());
+        $this->assertRegExp(
+            '/Created foo\/foo_create_user_table\.php/',
+            $commandTester->getDisplay()
+        );
     }
 
     /**
@@ -137,7 +140,10 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         $commandTester = new CommandTester($command);
         $commandTester->execute(array('command' => $command->getName()));
 
-        $this->assertRegExp('/No migrations found/', $commandTester->getDisplay());
+        $this->assertRegExp(
+            '/No migrations found/',
+            $commandTester->getDisplay()
+        );
     }
 
     /**
@@ -147,8 +153,6 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
      */
     public function testStatus()
     {
-        $this->files->shouldReceive('isDirectory')->once()->andReturn(true);
-        $this->migrations->setup();
         $this->migrations->db()->table('migrations')->insert(array(
             'id'      => '2013-06-14 07:58:39',
             'name'    => 'create_test',
@@ -169,6 +173,60 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
 
         $this->assertRegExp(
             '/\* 2013_06_14_075839_create_test \(applied\)/',
+            $commandTester->getDisplay()
+        );
+    }
+
+    /**
+     * Test the migration:up command
+     *
+     * Should run migrations up to a name
+     * OR all migrations not ran with --all flag
+     * OR a single migration with the --single flag
+     */
+    public function testUp()
+    {
+        $this->migrations->setFilesystem(new Filesystem);
+
+        $command = $this->application->find('migration:up');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array(
+            'command' => $command->getName(),
+            'name'    => '2013_06_14_183818_test_migration',
+        ));
+
+        $records = $this->migrations->db()->table('migrations')
+                                    ->where('applied', true)->get();
+
+        $this->assertEquals(2, count($records));
+
+        $this->assertRegExp(
+            '/Ran migration 2013_06_14_183818_test_migration/',
+            $commandTester->getDisplay()
+        );
+    }
+
+    public function testUpSingle()
+    {
+        $this->migrations->setFilesystem(new Filesystem);
+
+        $command = $this->application->find('migration:up');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array(
+            'command'  => $command->getName(),
+            'name'     => '2013_06_14_183818_test_migration',
+            '--single' => true,
+        ));
+
+        $records = $this->migrations->db()->table('migrations')
+                                    ->where('applied', true)->get();
+
+        $this->assertEquals(1, count($records));
+
+        $this->assertRegExp(
+            '/Ran migration 2013_06_14_183818_test_migration/',
             $commandTester->getDisplay()
         );
     }
