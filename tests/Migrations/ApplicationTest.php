@@ -181,8 +181,6 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
      * Test the migration:up command
      *
      * Should run migrations up to a name
-     * OR all migrations not ran with --all flag
-     * OR a single migration with the --single flag
      */
     public function testUp()
     {
@@ -207,6 +205,11 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * Test the migration:up command
+     *
+     * Run a single migration with the --single flag
+     */
     public function testUpSingle()
     {
         $this->migrations->setFilesystem(new Filesystem);
@@ -231,12 +234,103 @@ class ApplicationTest extends PHPUnit_Framework_TestCase
         );
     }
 
+    /**
+     * Test the migration:down command
+     *
+     * Should run all migrations down to a specific name
+     */
+    public function testDown()
+    {
+        $this->migrations->setFilesystem(new Filesystem);
+
+        $this->insertDummyData();
+
+        $command = $this->application->find('migration:down');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array(
+            'command' => $command->getName(),
+            'name'    => '2013_06_14_183818_test_migration',
+        ));
+
+        $records = $this->migrations->db()->table('migrations')
+                                    ->where('applied', false)->get();
+
+        $this->assertEquals(3, count($records));
+
+        $this->assertRegExp(
+            '/Rolled back migration 2013_06_14_183818_test_migration/',
+            $commandTester->getDisplay()
+        );
+    }
+
+    /**
+     * Test the migration:down command
+     *
+     * Run single migration with --single flag
+     */
+    public function testDownSingle()
+    {
+        $this->migrations->setFilesystem(new Filesystem);
+
+        $this->insertDummyData();
+
+        $command = $this->application->find('migration:down');
+
+        $commandTester = new CommandTester($command);
+        $commandTester->execute(array(
+            'command'  => $command->getName(),
+            'name'     => '2013_06_14_183818_test_migration',
+            '--single' => true,
+        ));
+
+        $records = $this->migrations->db()->table('migrations')
+                                    ->where('applied', false)->get();
+
+        $this->assertEquals(1, count($records));
+
+        $this->assertRegExp(
+            '/Rolled back migration 2013_06_14_183818_test_migration/',
+            $commandTester->getDisplay()
+        );
+    }
+
+    /**
      * Return a Migrations Creator mock object.
      * @return Chai\Migrations\creator mock object
      */
     protected function getCreator()
     {
         return $this->getMock('Chai\Migrations\Creator', array('getDatePrefix'), array($this->files));
+    }
+
+    /**
+     * Insert dummy data into migrations table
+     */
+    protected function insertDummyData()
+    {
+        $this->migrations->db()->table('migrations')->insert(array(
+            array(
+                'id'      => '2013-06-14 18:38:35',
+                'name'    => 'migration_two',
+                'applied' => true,
+            ),
+            array(
+                'id'      => '2013-06-14 18:38:27',
+                'name'    => 'migration_one',
+                'applied' => true,
+            ),
+            array(
+                'id'      => '2013-06-14 18:38:18',
+                'name'    => 'test_migration',
+                'applied' => true,
+            ),
+            array(
+                'id'      => '2013-06-14 07:58:39',
+                'name'    => 'create_test',
+                'applied' => true,
+            ),
+        ));
     }
 
 }
