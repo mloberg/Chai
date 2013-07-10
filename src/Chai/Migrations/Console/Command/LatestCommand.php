@@ -28,12 +28,6 @@ class LatestCommand extends BaseCommand
         foreach ($migrations as $migrationName) {
             $migration = $this->app->resolve($migrationName);
 
-            if ($migration->applied()) {
-                $msg = "Migration {$migrationName} already applied. Skipping.";
-                $output->writeln("<comment>{$msg}</comment>");
-                continue;
-            }
-
             $migration->runUp();
             if (!$migration->applied()) {
                 $msg = "<error>Could not apply migration {$migrationName}";
